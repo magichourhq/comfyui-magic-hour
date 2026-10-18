@@ -1,0 +1,15 @@
+[project]
+name = "comfyui-magic-hour"
+description = "Magic Hour nodes for ComfyUI: Image to Video, Talking Photo, Face Swap, and Character Replace."
+version = "0.1.0"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+dependencies = ["magic-hour>=0.87.1"]
+
+[project.urls]
+Repository = "https://github.com/magichourhq/comfyui-magic-hour"
+Documentation = "https://docs.magichour.ai"
+
+[tool.comfy]
+PublisherId = "TODO-set-after-creating-registry-publisher"
+DisplayName = "Magic Hour"
