@@ -2,7 +2,7 @@
 
 Together with the four hand-written nodes in nodes.py this covers every
 generation tool in the Magic Hour Python SDK (plus face detection).
-Voice nodes are off unless MAGIC_HOUR_ENABLE_VOICE_NODES=1.
+Voice nodes are included by default; set MAGIC_HOUR_DISABLE_VOICE_NODES=1 to hide them.
 """
 
 import os
@@ -333,7 +333,7 @@ VOICE_SPECS = [
          {"audio": AUD(), "prompt": STR("", True)}, _voice_cloner),
 ]
 
-if os.environ.get("MAGIC_HOUR_ENABLE_VOICE_NODES") == "1":
+if os.environ.get("MAGIC_HOUR_DISABLE_VOICE_NODES") != "1":
     SPECS = SPECS + VOICE_SPECS
 
 NODE_CLASS_MAPPINGS = {s.key: make_node(s) for s in SPECS}

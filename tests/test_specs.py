@@ -14,7 +14,6 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 PKG = os.path.basename(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-os.environ["MAGIC_HOUR_ENABLE_VOICE_NODES"] = "1"
 pkg = __import__(PKG, fromlist=["x"])
 h = sys.modules[PKG + ".helpers"]
 more = sys.modules[PKG + ".nodes_more"]
@@ -161,11 +160,14 @@ class T(unittest.TestCase):
         self.assertEqual(style["mouth_smile"], 30.0)
         self.assertNotIn("head_yaw", style)
 
-    def test_voice_nodes_off_by_default(self):
+    def test_voice_nodes_on_by_default_and_hideable(self):
         import subprocess
         code = (f"import sys; sys.path.insert(0, {os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))!r});"
                 f"import {PKG} as p; print('MagicHourVoiceCloner' in p.NODE_CLASS_MAPPINGS)")
-        env = {k: v for k, v in os.environ.items() if k != "MAGIC_HOUR_ENABLE_VOICE_NODES"}
+        env = {k: v for k, v in os.environ.items() if k != "MAGIC_HOUR_DISABLE_VOICE_NODES"}
+        out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, env=env)
+        self.assertEqual(out.stdout.strip(), "True", out.stderr)
+        env["MAGIC_HOUR_DISABLE_VOICE_NODES"] = "1"
         out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, env=env)
         self.assertEqual(out.stdout.strip(), "False", out.stderr)
 

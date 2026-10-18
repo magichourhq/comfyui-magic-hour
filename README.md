@@ -8,7 +8,7 @@ Custom nodes that run [Magic Hour](https://magichour.ai) generation tools inside
 
 **Other:** Face Detection (returns the API's JSON as text).
 
-**Voice** (return `AUDIO`, off by default): AI Voice Generator and AI Voice Cloner. Set `MAGIC_HOUR_ENABLE_VOICE_NODES=1` before starting ComfyUI to enable them. Only clone voices you have the right to use.
+**Voice** (return `AUDIO`): AI Voice Generator and AI Voice Cloner. Set `MAGIC_HOUR_DISABLE_VOICE_NODES=1` before starting ComfyUI to hide them. Only clone voices you have the right to use.
 
 That is 29 tools in total, the same set as the Magic Hour Python SDK. Long option lists (art styles, voices, meme templates, languages) are read from the installed SDK, so they stay in sync with the API.
 
