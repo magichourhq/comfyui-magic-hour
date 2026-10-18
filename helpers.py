@@ -192,3 +192,120 @@ def call(fn, **kwargs):
         if msg is None:
             raise
         raise RuntimeError(msg) from None
+
+
+# ---------------------------------------------------------------------------
+# Helpers for the spec-driven nodes (generic.py / nodes_more.py)
+# ---------------------------------------------------------------------------
+
+def _literal_values(tp):
+    """Collect string values from a (possibly nested Optional/Union) Literal type."""
+    import typing
+
+    out = []
+    for arg in typing.get_args(tp):
+        if isinstance(arg, str):
+            out.append(arg)
+        elif typing.get_args(arg):
+            out.extend(_literal_values(arg))
+    return out
+
+
+def typed_dict_options(td_name, field, fallback):
+    """Allowed values of a Literal field in the SDK's params, read at import time.
+
+    Reading them from the installed SDK keeps long lists (art styles, voices, meme
+    templates) in sync with the API instead of being copied into this repo.
+    """
+    try:
+        import typing
+
+        from magic_hour.types import params
+
+        hints = typing.get_type_hints(getattr(params, td_name))
+        vals = _literal_values(hints[field])
+        return vals or list(fallback)
+    except Exception:
+        return list(fallback)
+
+
+def signature_options(resource, param, fallback):
+    """Allowed values of a Literal parameter of <resource>.generate()."""
+    try:
+        import importlib
+        import inspect
+
+        mod = importlib.import_module(f"magic_hour.resources.v1.{resource}.client")
+        cls = next(
+            c
+            for n, c in vars(mod).items()
+            if inspect.isclass(c) and n.endswith("Client") and not n.startswith("Async") and hasattr(c, "generate")
+        )
+        ann = inspect.signature(cls.generate).parameters[param].annotation
+        vals = _literal_values(ann)
+        return vals or list(fallback)
+    except Exception:
+        return list(fallback)
+
+
+def finish_all(response):
+    """Like finish(), but returns every downloaded file path."""
+    status = getattr(response, "status", None)
+    if status != "complete":
+        err = getattr(response, "error", None)
+        detail = getattr(err, "message", None) or err or "no error details"
+        raise RuntimeError(f"Magic Hour job ended with status '{status}': {detail}")
+    paths = list(getattr(response, "downloaded_paths", None) or [])
+    if not paths:
+        raise RuntimeError("Magic Hour job completed but no output file was downloaded.")
+    return paths, getattr(response, "credits_charged", None)
+
+
+def load_images(paths, max_frames=64):
+    """Downloaded image files -> ComfyUI IMAGE batch ([B,H,W,3] float32 0-1).
+
+    Animated files (GIF) contribute their frames. Images whose size differs from
+    the first are resized to match it so they can share one batch.
+    """
+    import numpy as np
+    import torch
+    from PIL import Image, ImageSequence
+
+    frames = []
+    for p in paths:
+        with Image.open(p) as im:
+            for i, fr in enumerate(ImageSequence.Iterator(im)):
+                if i >= max_frames:
+                    break
+                frames.append(fr.convert("RGB"))
+    if not frames:
+        raise RuntimeError("No readable image in the Magic Hour output.")
+    size = frames[0].size
+    arrays = []
+    for fr in frames:
+        if fr.size != size:
+            fr = fr.resize(size)
+        arrays.append(np.asarray(fr, dtype=np.float32) / 255.0)
+    return torch.from_numpy(np.stack(arrays))
+
+
+def load_audio(path):
+    """Downloaded audio file -> ComfyUI AUDIO dict, decoded with PyAV (bundled with ComfyUI)."""
+    import av
+    import numpy as np
+    import torch
+
+    chunks = []
+    with av.open(path) as container:
+        stream = container.streams.audio[0]
+        rate = stream.rate
+        resampler = av.AudioResampler(format="fltp", layout=stream.layout.name, rate=rate)
+        for frame in container.decode(stream):
+            out = resampler.resample(frame)
+            for f in out if isinstance(out, list) else [out]:
+                if f is not None:
+                    chunks.append(f.to_ndarray())
+    if not chunks:
+        raise RuntimeError("No audio decoded from the Magic Hour output.")
+    wave_arr = np.concatenate(chunks, axis=1).astype(np.float32)  # [C, T]
+    return {"waveform": torch.from_numpy(wave_arr).unsqueeze(0), "sample_rate": int(rate)}

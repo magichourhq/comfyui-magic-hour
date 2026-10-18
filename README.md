@@ -2,14 +2,17 @@
 
 Custom nodes that run [Magic Hour](https://magichour.ai) generation tools inside a ComfyUI workflow, so you don't have to leave your graph or write API calls.
 
-| Node | What it does |
-| --- | --- |
-| **Magic Hour: Image to Video** | Animates an image into a video. Pick a model, resolution, duration, and optional prompt. |
-| **Magic Hour: Talking Photo** | Makes a photo talk using an audio clip (up to 60 seconds). |
-| **Magic Hour: Face Swap (Video)** | Swaps all faces in a video with the face in an image. |
-| **Magic Hour: Character Replace** | Replaces the person in a video with your character image, or animates your character with the video's motion. |
+**Video** (return a `VIDEO`): Image to Video, Text to Video, Video to Video, Talking Photo, Lip Sync, Face Swap (Video), Character Replace, AI Video Editor, AI Video Translator, Audio to Video, Animation, Auto Subtitle Generator.
 
-Each node uploads its inputs, starts the job, waits for it to finish, downloads the result into `ComfyUI/output/magic_hour/`, and returns a `VIDEO` plus the saved file path and the credits charged.
+**Image** (return an `IMAGE`): AI Image Generator, AI Image Editor, AI Image Upscaler, AI Headshot Generator, AI Clothes Changer, AI Face Editor, Face Swap (Photo), Head Swap, Body Swap, Background Remover, Photo Colorizer, AI Meme Generator, AI QR Code Generator, AI GIF Generator (frames).
+
+**Other:** Face Detection (returns the API's JSON as text).
+
+**Voice** (return `AUDIO`, off by default): AI Voice Generator and AI Voice Cloner. Set `MAGIC_HOUR_ENABLE_VOICE_NODES=1` before starting ComfyUI to enable them. Only clone voices you have the right to use.
+
+That is 29 tools in total, the same set as the Magic Hour Python SDK. Long option lists (art styles, voices, meme templates, languages) are read from the installed SDK, so they stay in sync with the API.
+
+Each node uploads its inputs, starts the job, waits for it to finish, downloads the result into `ComfyUI/output/magic_hour/`, and returns it with the saved file path and the credits charged.
 
 ## Install
 
@@ -38,7 +41,7 @@ The key is deliberately **not** a node field. Node field values are saved inside
 
 Every run spends credits on the account that owns the key. Longer videos, higher resolutions, and premium models cost more. See <https://magichour.ai/pricing> and the [API docs](https://docs.magichour.ai). Jobs run on Magic Hour's servers, so no GPU is needed locally.
 
-Use face swap and character replace only with faces and likenesses you have the right to use, and follow Magic Hour's [terms](https://magichour.ai/terms) and content guidelines.
+Use the swap, clothes changer, face editor, lip sync, and voice nodes only with people's likenesses and voices you have the right to use, and follow Magic Hour's [terms](https://magichour.ai/terms) and content guidelines.
 
 ## Example workflow: photo to talking video
 
