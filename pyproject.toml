@@ -1,5 +1,5 @@
 [project]
-name = "comfyui-magic-hour"
+name = "magic-hour"
 description = "Magic Hour AI image, video, and audio generation nodes for ComfyUI: image to video, face swap, talking photo, lip sync, upscaling, and more."
 version = "0.1.0"
 license = { file = "LICENSE" }
