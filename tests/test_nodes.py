@@ -123,6 +123,28 @@ class T(unittest.TestCase):
         self.assertAlmostEqual(secs, 2.0)
         os.remove(path)
 
+    def test_api_error_is_readable(self):
+        class Resp:
+            status_code = 402
+            text = ""
+            def json(self):
+                return {"code": "plan_upgrade_required", "message": "Resolution 720p is not available"}
+        class Boom(Exception):
+            response = Resp()
+        def fn(**kw):
+            raise Boom("raw")
+        with self.assertRaises(RuntimeError) as cm:
+            h.call(fn)
+        self.assertIn("402", str(cm.exception))
+        self.assertIn("not available", str(cm.exception))
+        self.assertIn("paid plan", str(cm.exception))
+
+    def test_non_api_error_passes_through(self):
+        def fn(**kw):
+            raise KeyError("x")
+        with self.assertRaises(KeyError):
+            h.call(fn)
+
     def test_bad_window(self):
         with self.assertRaises(ValueError):
             h.resolve_window(5, 3, None)

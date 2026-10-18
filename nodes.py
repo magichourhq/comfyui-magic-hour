@@ -31,7 +31,7 @@ class MagicHourImageToVideo:
                 "image": ("IMAGE",),
                 "duration_seconds": ("FLOAT", {"default": 5.0, "min": 1.0, "max": 30.0, "step": 0.5}),
                 "model": (I2V_MODELS, {"default": "default"}),
-                "resolution": (["720p", "480p", "1080p", "360p", "4k"], {"default": "720p"}),
+                "resolution": (["720p", "480p", "1080p", "4k"], {"default": "720p"}),
                 "prompt": ("STRING", {"multiline": True, "default": ""}),
             }
         }
@@ -59,7 +59,7 @@ class MagicHourImageToVideo:
                 kwargs["model"] = model
             if prompt.strip():
                 kwargs["style"] = {"prompt": prompt.strip()}
-            path, credits = h.finish(client.v1.image_to_video.generate(**kwargs))
+            path, credits = h.finish(h.call(client.v1.image_to_video.generate, **kwargs))
         finally:
             h.cleanup(img)
         return _result(path, credits)
@@ -96,7 +96,7 @@ class MagicHourTalkingPhoto:
             style = {"generation_mode": generation_mode}
             if generation_mode == "prompted" and prompt.strip():
                 style["prompt"] = prompt.strip()
-            path, credits = h.finish(client.v1.ai_talking_photo.generate(
+            path, credits = h.finish(h.call(client.v1.ai_talking_photo.generate,
                 assets={"image_file_path": img, "audio_file_path": wav},
                 start_seconds=start,
                 end_seconds=end,
@@ -156,7 +156,7 @@ class MagicHourFaceSwap:
             )
             if version != "default":
                 kwargs["style"] = {"version": version}
-            path, credits = h.finish(client.v1.face_swap.generate(**kwargs))
+            path, credits = h.finish(h.call(client.v1.face_swap.generate, **kwargs))
         finally:
             h.cleanup(vid, img)
         return _result(path, credits)
@@ -197,7 +197,7 @@ class MagicHourCharacterReplace:
         img = h.image_to_png(character_image)
         try:
             start, end = h.resolve_window(start_seconds, end_seconds, h.video_duration(video))
-            path, credits = h.finish(client.v1.character_replace.generate(
+            path, credits = h.finish(h.call(client.v1.character_replace.generate,
                 assets={"video_file_path": vid, "image_file_path": img},
                 start_seconds=start,
                 end_seconds=end,

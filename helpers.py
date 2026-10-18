@@ -159,3 +159,36 @@ def cleanup(*paths):
 
 def stamp():
     return time.strftime("%Y%m%d-%H%M%S")
+
+
+def api_error_message(exc):
+    """Readable text for a Magic Hour ApiError, or None if exc is not one."""
+    resp = getattr(exc, "response", None)
+    if resp is None or not hasattr(resp, "status_code"):
+        return None
+    detail = None
+    try:
+        body = resp.json()
+        detail = body.get("message") or body.get("error") or str(body)
+    except Exception:
+        detail = getattr(resp, "text", None)
+    status = resp.status_code
+    hint = ""
+    if status == 401:
+        hint = " Check that your API key is correct and was not deleted."
+    elif status == 402:
+        hint = " This setting or model needs a paid plan or more credits; try a lower resolution or check your balance at https://magichour.ai."
+    elif status == 422:
+        hint = " The chosen model, resolution, or duration combination is not supported; try the default model or another resolution."
+    return f"Magic Hour API error {status}: {detail}.{hint}"
+
+
+def call(fn, **kwargs):
+    """Run an SDK generate call, turning API errors into short readable ones."""
+    try:
+        return fn(**kwargs)
+    except Exception as exc:
+        msg = api_error_message(exc)
+        if msg is None:
+            raise
+        raise RuntimeError(msg) from None
