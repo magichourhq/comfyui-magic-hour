@@ -16,7 +16,7 @@ Each node uploads its inputs, starts the job, waits for it to finish, downloads 
 
 ## Install
 
-**Comfy Registry / ComfyUI-Manager:** search for "Magic Hour" (once published).
+**Comfy Registry:** [Magic Hour](https://registry.comfy.org/nodes/magic-hour) is published as `magic-hour` by `magichour`.
 
 **Manual:**
 
