@@ -1,5 +1,6 @@
-# Publishes to the Comfy Registry when the version in pyproject.toml changes on main. Run it
-# manually to publish the current version again, for example after a failed publish.
+# Publishes to the Comfy Registry, with a GitHub release whose notes become the registry
+# changelog, when the version in pyproject.toml changes on main. Run it manually to publish the
+# current version again, for example after a failed publish.
 name: Publish to Comfy Registry
 
 on:
@@ -16,6 +17,8 @@ jobs:
     name: Publish Custom Node to registry
     runs-on: ubuntu-latest
     if: ${{ github.repository_owner == 'magichourhq' }}
+    permissions:
+      contents: write # Required to create the GitHub release
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -31,7 +34,10 @@ jobs:
             CHANGED=true
           fi
           echo "Version $OLD_VERSION -> $VERSION, publish: $CHANGED"
-          echo "CHANGED=$CHANGED" >> "$GITHUB_ENV"
+          {
+            echo "CHANGED=$CHANGED"
+            echo "VERSION=$VERSION"
+          } >> "$GITHUB_ENV"
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         if: env.CHANGED == 'true'
         with:
@@ -41,6 +47,25 @@ jobs:
         run: pip install -r requirements.txt numpy pillow
       - if: env.CHANGED == 'true'
         run: python -m unittest discover -s tests -v
+      - name: Create GitHub release
+        if: env.CHANGED == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v$VERSION"
+          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release create "$TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --title "$TAG" \
+              --generate-notes
+          fi
+          # comfy-cli sends this as the version's changelog, shown on the registry page.
+          {
+            echo "COMFY_NODE_CHANGELOG<<CHANGELOG_EOF"
+            gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json body --jq .body
+            echo "CHANGELOG_EOF"
+          } >> "$GITHUB_ENV"
       - name: Publish Custom Node
         if: env.CHANGED == 'true'
         uses: Comfy-Org/publish-node-action@d2366e7abb6ab16f3bb03e3520ae25c8cf749bc9 # main, 2025-05-10
