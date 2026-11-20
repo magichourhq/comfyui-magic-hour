@@ -1,14 +1,15 @@
+# Publishes to the Comfy Registry when the version in pyproject.toml changes on main. Run it
+# manually to publish the current version again, for example after a failed publish.
 name: Publish to Comfy Registry
+
 on:
-  workflow_dispatch:
   push:
-    branches:
-      - main
-    paths:
-      - "pyproject.toml"
+    branches: [main]
+    paths: [pyproject.toml]
+  workflow_dispatch:
 
 permissions:
-  issues: write
+  contents: read
 
 jobs:
   publish-node:
@@ -16,9 +17,33 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.repository_owner == 'magichourhq' }}
     steps:
-      - name: Check out code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Check if the version changed
+        run: |
+          version() { python3 -c 'import sys, tomllib; print(tomllib.loads(sys.stdin.read())["project"]["version"])'; }
+          VERSION=$(version < pyproject.toml)
+          OLD_VERSION=$(git show HEAD~1:pyproject.toml | version)
+          CHANGED=false
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ] || [ "$OLD_VERSION" != "$VERSION" ]; then
+            CHANGED=true
+          fi
+          echo "Version $OLD_VERSION -> $VERSION, publish: $CHANGED"
+          echo "CHANGED=$CHANGED" >> "$GITHUB_ENV"
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        if: env.CHANGED == 'true'
+        with:
+          python-version: "3.12"
+      - if: env.CHANGED == 'true'
+        # ComfyUI provides numpy and Pillow at runtime, so the tests install them here.
+        run: pip install -r requirements.txt numpy pillow
+      - if: env.CHANGED == 'true'
+        run: python -m unittest discover -s tests -v
       - name: Publish Custom Node
-        uses: Comfy-Org/publish-node-action@main
+        if: env.CHANGED == 'true'
+        uses: Comfy-Org/publish-node-action@d2366e7abb6ab16f3bb03e3520ae25c8cf749bc9 # main, 2025-05-10
         with:
           personal_access_token: ${{ secrets.REGISTRY_ACCESS_TOKEN }}
+          skip_checkout: "true"
