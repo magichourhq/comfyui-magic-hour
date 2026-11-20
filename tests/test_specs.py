@@ -163,7 +163,10 @@ class T(unittest.TestCase):
     def test_voice_nodes_on_by_default_and_hideable(self):
         import subprocess
         code = (f"import sys; sys.path.insert(0, {os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))!r});"
-                f"import {PKG} as p; print('MagicHourVoiceCloner' in p.NODE_CLASS_MAPPINGS)")
+                # importlib accepts the checkout's folder name even when it isn't a valid
+                # identifier, like the default "comfyui-magic-hour".
+                f"import importlib; p = importlib.import_module({PKG!r}); "
+                f"print('MagicHourVoiceCloner' in p.NODE_CLASS_MAPPINGS)")
         env = {k: v for k, v in os.environ.items() if k != "MAGIC_HOUR_DISABLE_VOICE_NODES"}
         out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, env=env)
         self.assertEqual(out.stdout.strip(), "True", out.stderr)
