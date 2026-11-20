@@ -1,10 +1,10 @@
 [project]
 name = "magic-hour"
 description = "Magic Hour AI image, video, and audio generation nodes for ComfyUI: image to video, face swap, talking photo, lip sync, upscaling, and more."
-version = "0.1.0"
+version = "0.1.1"
 license = { file = "LICENSE" }
 requires-python = ">=3.10"
-dependencies = ["magic-hour>=0.87.1"]
+dependencies = ["magic-hour>=0.87.1,<1"]
 
 [project.urls]
 Repository = "https://github.com/magichourhq/comfyui-magic-hour"
