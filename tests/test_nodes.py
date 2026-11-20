@@ -51,7 +51,7 @@ class FakeResource:
         open(out, "wb").write(b"x")
         err = types.SimpleNamespace(message="boom")
         return types.SimpleNamespace(
-            status=self.status, error=err, downloaded_paths=[out], credits_charged=240
+            id="project-1", status=self.status, error=err, downloaded_paths=[out], credits_charged=240
         )
 
 
@@ -115,6 +115,7 @@ class T(unittest.TestCase):
         with self.assertRaises(RuntimeError) as cm:
             nodes.MagicHourImageToVideo().run(self.img, 5.0, "default", "720p", "")
         self.assertIn("boom", str(cm.exception))
+        self.assertIn("project-1", str(cm.exception))
 
     def test_wav_roundtrip(self):
         path, secs = h.audio_to_wav(self.audio)

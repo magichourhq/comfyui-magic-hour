@@ -118,15 +118,8 @@ def output_dir():
 
 def finish(response):
     """Validate an SDK response and return the downloaded file path."""
-    status = getattr(response, "status", None)
-    if status != "complete":
-        err = getattr(response, "error", None)
-        detail = getattr(err, "message", None) or err or "no error details"
-        raise RuntimeError(f"Magic Hour job ended with status '{status}': {detail}")
-    paths = getattr(response, "downloaded_paths", None) or []
-    if not paths:
-        raise RuntimeError("Magic Hour job completed but no output file was downloaded.")
-    return paths[0], getattr(response, "credits_charged", None)
+    paths, credits = finish_all(response)
+    return paths[0], credits
 
 
 def to_comfy_video(path):
@@ -250,14 +243,17 @@ def signature_options(resource, param, fallback):
 
 def finish_all(response):
     """Like finish(), but returns every downloaded file path."""
+    # The job was accepted and may have been charged, so name the project. Running the node
+    # again would start, and pay for, a new job.
+    project = f"Magic Hour project {getattr(response, 'id', None)}"
     status = getattr(response, "status", None)
     if status != "complete":
         err = getattr(response, "error", None)
         detail = getattr(err, "message", None) or err or "no error details"
-        raise RuntimeError(f"Magic Hour job ended with status '{status}': {detail}")
+        raise RuntimeError(f"{project} ended with status '{status}': {detail}")
     paths = list(getattr(response, "downloaded_paths", None) or [])
     if not paths:
-        raise RuntimeError("Magic Hour job completed but no output file was downloaded.")
+        raise RuntimeError(f"{project} completed but no output file was downloaded.")
     return paths, getattr(response, "credits_charged", None)
 
 
